@@ -12,7 +12,7 @@ from gec_env_class import *
 from dataset import *
 
 if __name__ == '__main__':
-    file_path_10gec = "../Datasets/10gec_annotations/"
+    file_path_10gec = "10gec_annotations/"
     file = open(file_path_10gec + "A1.m2")
 
     gec_data = Dataset(num_annotators = 10)
@@ -77,4 +77,16 @@ if __name__ == '__main__':
 
 # Add([1,1], "the")
 # Replace([7,8], "wanted")
+'''
+Hint
+Index_Hint
+All_Hint
+Idk
+Replace([7,8], "wanted")
+Idk
+Replace([8,9], "in")
+All_Hint
+Idk
+GiveUp
+'''
 
