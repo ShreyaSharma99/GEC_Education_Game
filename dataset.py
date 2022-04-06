@@ -19,10 +19,6 @@ class Annotator():
         self.A_list = A_list
         self.G = G
 
-# class Datapoint():
-#     def __init__(self, annotator_list = []):
-#         self.annotator_list = annotator_list
-
 class Dataset():
     def __init__(self, num_annotators = 10):
         self.num_annotators = num_annotators
@@ -48,10 +44,25 @@ class Dataset():
                 elif line[0] == "A":
                     ans  = {}
                     cells = line.strip().split("|||")
-                    ans["indices"] = [int(i) for i in cells[0].split()[1:]]  # A 5 6
                     ans["error_tag"] = cells[1]
+                    if ans["error_tag"] == "Um":
+                        continue
+                    ans["indices"] = [int(i) for i in cells[0].split()[1:]]  # A 5 6
                     ans["correction"] = cells[2]
                     current_A.append(ans)
+
+                    # if ans["indices"][1] == ans["indices"][0]: # "add" action
+                    #     current_A_bucket.append({"bucket" : ans["indices"][1]*2, "correction": ans["correction"], "error_tag":ans["error_tag"]})
+
+                    # elif ans["indices"][1] > ans["indices"][0] and ans["correction"]=="":  # "delete" action
+                    #     for i in range(ans["indices"][0], ans["indices"][1]):
+                    #         current_A_bucket.append({"bucket" : i*2 + 1, "correction": "", "error_tag":ans["error_tag"]})
+
+                    # elif ans["indices"][1] > ans["indices"][0] and ans["correction"]!="":  # "replace" action
+                    #     current_A_bucket.append({"bucket" : ans["indices"][0]*2, "correction": ans["correction"], "error_tag":ans["error_tag"]})
+                    #     for i in range(ans["indices"][0], ans["indices"][1]):
+                    #         current_A_bucket.append({"bucket" : i*2 + 1, "correction": "", "error_tag":ans["error_tag"]})
+
                     self.vocab.update(set(ans["correction"].split()))
                     self.error_tags.update(set(ans["error_tag"]))
 
@@ -63,7 +74,6 @@ class Dataset():
                         self.datapoints.append(an_list)
                     else:
                         self.datapoints[ex_ind].append(annot)
-                    # print(ex_ind)
                     self.datapoints[ex_ind][an-1].G = get_correct(self.datapoints[ex_ind][an-1])
                     current_S = ""
                     current_A = []
