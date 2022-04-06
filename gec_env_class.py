@@ -35,7 +35,7 @@ class GEC_Env(Env):
         # we create an observation space with predefined range
         self.observation_space = Box(low=np.array([len(dataset.vocab)] * dataset.max_sent_len, dtype=np.int32), high=np.array([0] * dataset.max_sent_len, dtype=np.int32), dtype = np.float32)
         # similar to observation, we define action space 
-        self.action_space = ["Replace", "Delete", "Add", "Undo", "Idk", "Hint", "GiveUp", "Index_Hint", "Full_Hint"]
+        self.action_space = ["Replace", "Delete", "Add", "Undo", "Idk", "Hint", "GiveUp", "Index_Hint", "All_Hint"]
         
     
     def step(self, action, arg1 = [], string = ""):
@@ -55,7 +55,7 @@ class GEC_Env(Env):
         if action == "Index_Hint":
             return self.action_hint(1)
         
-        if action == "Full_Hint":
+        if action == "All_Hint":
             return self.action_hint(2)
 
         # update action buffer
@@ -135,7 +135,7 @@ class GEC_Env(Env):
             print_sent(self.sent)
             return self.sent, self.reward, done, info 
         
-        self.reward = self.reward[-2] - 0.5/len(self.data_state[self.annotator].S.split()) # undo penalty
+        self.reward = self.reward[-2] - 0.25/len(self.data_state[self.annotator].S.split()) # undo penalty
         self.reward_buff.append(self.reward)
         
         # restoring previous state
