@@ -43,7 +43,10 @@ class GEC_Env(Env):
         sent1 = self.sent.split()
         print("ACTION - ", action)
         if action == "undo":
-            return self.action_undo()
+            return self.action_undo(0)
+
+        elif action == "undo_typo":
+            return self.action_undo(1)
 
         elif action == "hint":
             return self.action_hint(0)
@@ -106,7 +109,8 @@ class GEC_Env(Env):
                 # else:
                 #     self.feedback += "Hint: There is an something"+ phrase_feedback +" with - " + err
 
-        self.reward = (self.edit_dist-min_edit)/len(self.data_state[self.annotator].S.split())
+        self.reward = (self.edit_dist-min_edit)
+        # self.reward = (self.edit_dist-min_edit)/len(self.data_state[self.annotator].S.split())
         self.edit_dist = min_edit
         print("Edit distance = ", self.edit_dist)
         print("Reward = ", self.reward)
@@ -124,13 +128,16 @@ class GEC_Env(Env):
 
         return self.sent, self.reward, done, info 
 
-    def action_undo(self):
+    def action_undo(self, typo=0):
         done, info = True, {}
         self.action_buff.append(["Undo", "", ""])
         if len(self.sent_buff) < 2:
             self.feedback = "Error : There is no action to undo!!"
             # self.reward = 0 - 0.25/len(self.data_state[self.annotator].S.split()) # undo penalty
-            self.reward = 0.25/len(self.data_state[self.annotator].S.split()) # undo penalty
+            if typo==0:
+                self.reward = -0.25 # undo penalty
+            else:
+                self.reward = 0
             self.reward_buff.append(self.reward)
             print("Reward = ", self.reward)
             print(self.feedback, "\n")
@@ -139,7 +146,7 @@ class GEC_Env(Env):
             return self.sent, self.reward, done, info 
         
         # self.reward = self.reward_buff[-2] - 0.25/len(self.data_state[self.annotator].S.split()) # undo penalty
-        self.reward = -0.25/len(self.data_state[self.annotator].S.split()) # undo penalty
+        self.reward = -0.25 if typo==0 else 0 # undo penalty
         self.reward_buff.append(self.reward)
         
         # restoring previous state
@@ -171,14 +178,14 @@ class GEC_Env(Env):
             example_feedback = FEEDBACK_TEMPLATE1[err_tag][0] + "\n" + FEEDBACK_TEMPLATE1[err_tag][1] if err_tag in FEEDBACK_TEMPLATE1 else "Feedback: " + err_tag
             if hint_type == 0:  # example type feedback
                 self.feedback = "Hint: There is something " + phrase_feedback + " with - " + example_feedback
-                self.reward = -0.5/len(self.data_state[self.annotator].S.split()) # hint penalty for type 0 
+                self.reward = -0.5 # hint penalty for type 0 
             elif hint_type == 1:  # index type feedback
                 self.feedback = "Hint: There is something " + phrase_feedback + " between indices - " + str(self.next_gt_action_buff[-1]["indices"][0]) + " and " + str(self.next_gt_action_buff[-1]["indices"][1])
-                self.reward = -0.6/len(self.data_state[self.annotator].S.split()) # hint penalty for type 1 
+                self.reward = -0.6 # hint penalty for type 1 
             elif hint_type == 2:  # index + error type feedback
                 self.feedback = "Hint: There is something " + phrase_feedback + " between indices - " + str(self.next_gt_action_buff[-1]["indices"][0]) + " and " + str(self.next_gt_action_buff[-1]["indices"][1]) + \
                                 " with error type - " + example_feedback
-                self.reward = -0.8/len(self.data_state[self.annotator].S.split()) # hint penalty for type 2
+                self.reward = -0.8 # hint penalty for type 2
                                 
         
         self.action_buff.append(["Hint", "", ""])
@@ -215,7 +222,7 @@ class GEC_Env(Env):
             self.feedback = "Major Hint: One of the grammatical errors - " +  error + ", have been corrected!"
             self.sent = perform_act(self.sent, self.next_gt_action_buff[-1])
         # self.reward = self.reward - 1/len(self.data_state[self.annotator].S.split()) # idk penalty
-        self.reward = - 1/len(self.data_state[self.annotator].S.split()) # idk penalty
+        self.reward = - 1 # idk penalty
         self.reward_buff.append(self.reward)
         self.sent_buff.append(self.sent)
         pending_act, _ = get_errors(self.sent, self.data_state[self.annotator].G)

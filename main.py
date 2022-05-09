@@ -12,7 +12,7 @@ import math
 from gec_env_class import *
 from dataset import *
 
-valid_commands = {"add", "replace", "delete", "hint", "undo", "index_hint", "all_hint", "idk", "giveup", "help", "quit", "next"}
+valid_commands = {"add", "replace", "delete", "hint", "undo",  "undo_typo", "index_hint", "all_hint", "idk", "giveup", "help", "quit", "next"}
 
 if __name__ == '__main__':
     file_path_10gec = "10gec_annotations/"
@@ -82,13 +82,14 @@ if __name__ == '__main__':
                 continue
 
             if user_input == "help":
-                print("-----------------------\nChoose your action - [Add, Replace, Delete, Undo, Hint, Index_Hint, All_Hint, Idk, GiveUp, Done] \n" + 
+                print("-----------------------\nChoose your action - [Add, Replace, Delete, Undo, Undo_typo, Hint, Index_Hint, All_Hint, Idk, GiveUp, Done] \n" + 
                     "To move to the next correction task type - Next (if you reached the right answer) or GiveUp \n" +
                     "Action template: \n" + 
                     "Add([ind1, ind1], \"PHRASE YOU WANT TO ADD\") \n" + 
                     "Replace([ind1, ind2], \"PHRASE YOU WANT TO CHANGE TO\") \n" + 
                     "Delete([ind1, ind2]) \n" + 
                     "Undo \n"  +
+                    "Undo_typo - Let's you undo the last action without any penalty. \n"  +
                     "Hint - Get some hint about the next action with least penalty.\n" + 
                     "Index_Hint - Get some hint about \"where\" the next error is but with a slightly higher penalty.\n" + 
                     "All_Hint - Get some hint about \"where\" and \"what\" the next error is with a significant penalty.\n" + 

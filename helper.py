@@ -19,7 +19,7 @@ def print_sent(sent):
     table = []
     sent = sent.split()
     for i in range(len(sent)):
-        print(sent[i]+"(" + str(i) + ")", end = " ")
+        print("(" + str(i) + ")" + sent[i], end = " ")
 
 def get_correct(annot):
     # data is an annotator object
