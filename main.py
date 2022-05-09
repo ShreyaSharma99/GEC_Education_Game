@@ -38,7 +38,7 @@ if __name__ == '__main__':
     while True:
 
         try:
-            print("\n------------------------------------ \n")
+            print("\n------------------------------------")
             user_input = input("\nInput Action: ")
 
             if "(" not in user_input: command = user_input.lower()

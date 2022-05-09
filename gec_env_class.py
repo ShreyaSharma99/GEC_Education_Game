@@ -234,7 +234,9 @@ class GEC_Env(Env):
     def reset(self, user, count):
         #self.data_id = random.randint(0, data_size)-1
         task_ind = {'mattia' : [3, 635, 35, 9, 12, 52],
-                    'shehzaad' : [106, 159, 112, 209, 635, 3]}
+                    'shehzaad' : [106, 159, 112, 209, 635, 3],
+                    'mrinmaya' : [9, 112, 12, 106, 745, 1029],
+                    'kirti' : [209, 52, 35, 159, 745, 1029]}
         self.data_id = task_ind[user][count]
         # 604, 1262
         print("data id = ",self.data_id)
