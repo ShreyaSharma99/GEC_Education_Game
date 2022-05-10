@@ -22,17 +22,18 @@ class GEC_Env(Env):
         self.annotator = 0
         self.edit_dist = dataset.max_sent_len
         self.reward = 0
+        self.max_reward = 1
+        self.cumulative_reward = 0
 
         self.feedback = ""
         self.action_buff = []
-        # self.reward = 0
         self.reward_buff = []
         
         self.sent_buff = []
         self.annotator_buff = []
         self.next_gt_action_buff = []
         self.edit_dist_buff = []
-
+        
         # we create an observation space with predefined range
         self.observation_space = Box(low=np.array([len(dataset.vocab)] * dataset.max_sent_len, dtype=np.int32), high=np.array([0] * dataset.max_sent_len, dtype=np.int32), dtype = np.float32)
         # similar to observation, we define action space 
@@ -75,6 +76,7 @@ class GEC_Env(Env):
 
         # calculate the maximum reward along with the annotator closest to the updated state
         min_edit = max(len(self.sent.split()), len(self.data_state[self.annotator].S.split()))
+        total_ed = 0
         for i in range(len(self.data_state)):
             annot = self.data_state[i]
             edit_dist = get_ed(self.sent.split(), annot.G.split())
@@ -83,6 +85,9 @@ class GEC_Env(Env):
                 self.annotator = i
 
         pending_actions, action_len = get_errors(self.sent, self.data_state[self.annotator].G)
+        # edit dist from S to G for this chosen annotator
+        total_ed = get_ed(self.data_state[self.annotator].S.split(), self.data_state[self.annotator].G.split())
+
         self.feedback == ""
         if action_len == 0:
             self.feedback = "Feedback: The sentence is grammatically correct! "
@@ -109,10 +114,11 @@ class GEC_Env(Env):
                 # else:
                 #     self.feedback += "Hint: There is an something"+ phrase_feedback +" with - " + err
 
-        self.reward = (self.edit_dist-min_edit)
+        self.reward = self.max_reward - (min_edit/total_ed) - self.cumulative_reward
+        self.cumulative_reward = 1 - (min_edit/total_ed)
         # self.reward = (self.edit_dist-min_edit)/len(self.data_state[self.annotator].S.split())
         self.edit_dist = min_edit
-        print("Edit distance = ", self.edit_dist)
+        # print("Edit distance = ", self.edit_dist)
         print("Reward = ", self.reward)
         print("Closest Annotator = ", self.annotator)
         print(self.feedback, "\n")
@@ -124,6 +130,7 @@ class GEC_Env(Env):
         self.sent_buff.append(self.sent)
         self.annotator_buff.append(self.annotator)
         self.reward_buff.append(self.reward)
+        # self.cumulative_reward_buff.append(self.cumulative_reward_buff)
         self.edit_dist_buff.append(self.edit_dist)
 
         return self.sent, self.reward, done, info 
@@ -131,22 +138,26 @@ class GEC_Env(Env):
     def action_undo(self, typo=0):
         done, info = True, {}
         self.action_buff.append(["Undo", "", ""])
+        # when no action has been taken yet
         if len(self.sent_buff) < 2:
             self.feedback = "Error : There is no action to undo!!"
             # self.reward = 0 - 0.25/len(self.data_state[self.annotator].S.split()) # undo penalty
             if typo==0:
-                self.reward = -0.25 # undo penalty
+                self.reward = -1 * undo_penalty # undo penalty
+                self.max_reward += self.reward
             else:
                 self.reward = 0
             self.reward_buff.append(self.reward)
             print("Reward = ", self.reward)
+            print("Closest Annotator = ", self.annotator)
             print(self.feedback, "\n")
             print("Next state: ", self.sent)
             print_sent(self.sent)
             return self.sent, self.reward, done, info 
         
         # self.reward = self.reward_buff[-2] - 0.25/len(self.data_state[self.annotator].S.split()) # undo penalty
-        self.reward = -0.25 if typo==0 else 0 # undo penalty
+        self.reward = -1 * undo_penalty if typo==0 else 0 # undo penalty
+        self.max_reward += self.reward
         self.reward_buff.append(self.reward)
         
         # restoring previous state
@@ -157,9 +168,13 @@ class GEC_Env(Env):
         self.edit_dist = self.edit_dist_buff[-2]
         del self.edit_dist_buff[-1]
         del self.next_gt_action_buff[-1]
+        
+        total_ed = get_ed(self.data_state[self.annotator].S.split(), self.data_state[self.annotator].G.split())
+        self.cumulative_reward = 1 - (self.edit_dist/total_ed)
 
         self.feedback = "Reverted back to old state"
         print("Reward = ", self.reward)
+        print("Closest Annotator = ", self.annotator)
         print(self.feedback, "\n")
         print("Next state: ", self.sent)
         print_sent(self.sent)
@@ -178,19 +193,20 @@ class GEC_Env(Env):
             example_feedback = FEEDBACK_TEMPLATE1[err_tag][0] + "\n" + FEEDBACK_TEMPLATE1[err_tag][1] if err_tag in FEEDBACK_TEMPLATE1 else "Feedback: " + err_tag
             if hint_type == 0:  # example type feedback
                 self.feedback = "Hint: There is something " + phrase_feedback + " with - " + example_feedback
-                self.reward = -0.5 # hint penalty for type 0 
+                self.reward = -1 * error_hint_penalty # hint penalty for type 0 
             elif hint_type == 1:  # index type feedback
                 self.feedback = "Hint: There is something " + phrase_feedback + " between indices - " + str(self.next_gt_action_buff[-1]["indices"][0]) + " and " + str(self.next_gt_action_buff[-1]["indices"][1])
-                self.reward = -0.6 # hint penalty for type 1 
+                self.reward = -1 * index_hint_penalty # hint penalty for type 1 
             elif hint_type == 2:  # index + error type feedback
                 self.feedback = "Hint: There is something " + phrase_feedback + " between indices - " + str(self.next_gt_action_buff[-1]["indices"][0]) + " and " + str(self.next_gt_action_buff[-1]["indices"][1]) + \
                                 " with error type - " + example_feedback
-                self.reward = -0.8 # hint penalty for type 2
+                self.reward = -1 * all_hint_penalty # hint penalty for type 2
                                 
-        
+        self.max_reward += self.reward
         self.action_buff.append(["Hint", "", ""])
         self.reward_buff.append(self.reward)
         print("Reward = ", self.reward)
+        print("Closest Annotator = ", self.annotator)
         print(self.feedback, "\n")
         print("Next state: ", self.sent)
         print_sent(self.sent)
@@ -209,6 +225,7 @@ class GEC_Env(Env):
         self.edit_dist_buff.append(self.edit_dist)
         self.action_buff.append(["GiveUp", "", ""])
         print("Reward = ", self.reward)
+        print("Closest Annotator = ", self.annotator)
         print(self.feedback, "\n")
         print("Next state: ", self.sent)
         print_sent(self.sent)
@@ -222,7 +239,9 @@ class GEC_Env(Env):
             self.feedback = "Major Hint: One of the grammatical errors - " +  error + ", have been corrected!"
             self.sent = perform_act(self.sent, self.next_gt_action_buff[-1])
         # self.reward = self.reward - 1/len(self.data_state[self.annotator].S.split()) # idk penalty
-        self.reward = - 1 # idk penalty
+        self.reward = -1 * idk_penalty # idk penalty
+        self.max_reward += self.reward
+        
         self.reward_buff.append(self.reward)
         self.sent_buff.append(self.sent)
         pending_act, _ = get_errors(self.sent, self.data_state[self.annotator].G)
@@ -230,8 +249,13 @@ class GEC_Env(Env):
         else: self.next_gt_action_buff.append(None)
         self.edit_dist = len(pending_act)
         self.edit_dist_buff.append(self.edit_dist)
+
+        total_ed = get_ed(self.data_state[self.annotator].S.split(), self.data_state[self.annotator].G.split())
+        self.cumulative_reward = 1 - (self.edit_dist/total_ed)
+        
         self.action_buff.append(["Idk", "", ""])
         print("Reward = ", self.reward)
+        print("Closest Annotator = ", self.annotator)
         print(self.feedback, "\n")
         print("Next state: ", self.sent)
         print_sent(self.sent)
@@ -246,14 +270,16 @@ class GEC_Env(Env):
                     'kirti' : [209, 52, 35, 159, 745, 1029]}
         self.data_id = task_ind[user][count]
         # 604, 1262
-        print("data id = ",self.data_id)
-        print("reward = ", self.reward)
+        # print("data id = ",self.data_id)
+        # print("reward = ", self.reward)
         self.sent = copy.deepcopy(self.dataset.datapoints[self.data_id][0].S)
         self.data_state = copy.deepcopy(self.dataset.datapoints[self.data_id])
         # self.sent_mapping = [list(np.arange(0, len(self.sent.split())))]
         self.annotator = 0
         self.feedback = ""
         self.reward = 0
+        self.max_reward = 1
+        self.cumulative_reward = 0
         self.bucket_map = {}
         for i in range(len(self.sent.split())):
             self.bucket_map[i] = 2*i + 1
@@ -276,7 +302,7 @@ class GEC_Env(Env):
     def toJson(self):
         return json.dumps(self, default=lambda o: o.__dict__)
 
-    def save_game_state(self):
+    def save_game_state(self, all=False):
         state_dict = {}
         state_dict["sent"] = self.sent
         state_dict["data_id"] = self.data_id
@@ -286,32 +312,15 @@ class GEC_Env(Env):
         state_dict["edit_dist"] = self.edit_dist
         state_dict["reward"] = self.reward
         state_dict["feedback"] = self.feedback
-        state_dict["action_buff"] = self.action_buff
-        state_dict["reward_buff"] = self.reward_buff
-        state_dict["sent_buff"] = self.sent_buff
-        state_dict["annotator_buff"] = self.annotator_buff
-        state_dict["next_gt_action_buff"] = self.next_gt_action_buff
-        state_dict["edit_dist_buff"] =self.edit_dist_buff
+        state_dict["max_reward"] = self.max_reward
+        state_dict["cumulative_reward"] = self.cumulative_reward
+
+        if all:
+            state_dict["action_buff"] = self.action_buff
+            state_dict["reward_buff"] = self.reward_buff
+            state_dict["sent_buff"] = self.sent_buff
+            state_dict["annotator_buff"] = self.annotator_buff
+            state_dict["next_gt_action_buff"] = self.next_gt_action_buff
+            state_dict["edit_dist_buff"] =self.edit_dist_buff
 
         return state_dict
-
-        # self.sent = ""
-        # # self.sent_mapping = []
-        # self.data_id = -1
-        # self.dataset = dataset
-        # self.data_state = ""
-        # self.gamma = 0.95
-
-        # self.annotator = 0
-        # self.edit_dist = dataset.max_sent_len
-        # self.reward = 0
-
-        # self.feedback = ""
-        # self.action_buff = []
-        # self.reward = 0
-        # self.reward_buff = []
-        
-        # self.sent_buff = []
-        # self.annotator_buff = []
-        # self.next_gt_action_buff = []
-        # self.edit_dist_buff = []

@@ -14,10 +14,11 @@ from helper import *
 # 'G': 'In the old days , if someone wanted to tell some important news to someone else who lived far away , he needed to write letters which wastes time .'},
 
 class Annotator():
-    def __init__(self, S, A_list=[], G=""):
+    def __init__(self, S, A_list=[], G="", ed = 0):
         self.S = S
         self.A_list = A_list
         self.G = G
+        # self.edit_dist = ed
 
 class Dataset():
     def __init__(self, num_annotators = 10):
@@ -51,18 +52,6 @@ class Dataset():
                     ans["correction"] = cells[2]
                     current_A.append(ans)
 
-                    # if ans["indices"][1] == ans["indices"][0]: # "add" action
-                    #     current_A_bucket.append({"bucket" : ans["indices"][1]*2, "correction": ans["correction"], "error_tag":ans["error_tag"]})
-
-                    # elif ans["indices"][1] > ans["indices"][0] and ans["correction"]=="":  # "delete" action
-                    #     for i in range(ans["indices"][0], ans["indices"][1]):
-                    #         current_A_bucket.append({"bucket" : i*2 + 1, "correction": "", "error_tag":ans["error_tag"]})
-
-                    # elif ans["indices"][1] > ans["indices"][0] and ans["correction"]!="":  # "replace" action
-                    #     current_A_bucket.append({"bucket" : ans["indices"][0]*2, "correction": ans["correction"], "error_tag":ans["error_tag"]})
-                    #     for i in range(ans["indices"][0], ans["indices"][1]):
-                    #         current_A_bucket.append({"bucket" : i*2 + 1, "correction": "", "error_tag":ans["error_tag"]})
-
                     self.vocab.update(set(ans["correction"].split()))
                     self.error_tags.update(set(ans["error_tag"]))
 
@@ -75,6 +64,9 @@ class Dataset():
                     else:
                         self.datapoints[ex_ind].append(annot)
                     self.datapoints[ex_ind][an-1].G = get_correct(self.datapoints[ex_ind][an-1])
+                    # self.datapoints[ex_ind][an-1].edit_dist = get_ed(current_S.split(), self.datapoints[ex_ind][an-1].G.split())
+                    # self.edit_dist.append(action_len)
+
                     current_S = ""
                     current_A = []
 

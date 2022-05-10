@@ -20,7 +20,7 @@ if __name__ == '__main__':
 
     gec_data = Dataset(num_annotators = 10)
     gec_data.load_dataset(file_path_10gec)
-    # print(gec_data.datapoints[74][0].bucket_change)
+
     # get_errors('Privicy protection belongs to human rights .', 'Privacy protection is a human right .')
 
     env = GEC_Env(gec_data)
@@ -50,9 +50,9 @@ if __name__ == '__main__':
 
             if command == "quit":
                 comment = input("\nComments: ")
-                game_state = env.save_game_state()
-                game_state["comment"] = comment
+                game_state = env.save_game_state(all=True)
                 game_state["action_cmd"] = user_input
+                game_state["comment"] = comment
                 game_state_list.append(game_state)
                 json_object = json.dumps(game_state_list, indent = 4)
                 with open(user_name + "_" + str(task_count) +  ".json", "w") as outfile:
@@ -61,9 +61,9 @@ if __name__ == '__main__':
 
             if command == "next":
                 comment = input("\nComments: ")
-                game_state = env.save_game_state()
-                game_state["comment"] = comment
+                game_state = env.save_game_state(all=True)
                 game_state["action_cmd"] = user_input
+                game_state["comment"] = comment
                 game_state_list.append(game_state)
 
                 json_object = json.dumps(game_state_list, indent = 4)
@@ -114,13 +114,17 @@ if __name__ == '__main__':
             act1 = env.step(command, [ind1,ind2], in_string)
             print("\n")
             
-            comment = input("\nComments: ")
+            # comment = input("\nComments: ")
             game_state = env.save_game_state()
-            game_state["comment"] = comment
+            # game_state["comment"] = comment
             game_state["action_cmd"] = user_input
             
             game_state_list.append(game_state)
         except:
+            if len(game_state_list) > 0:
+                json_object = json.dumps(game_state_list, indent = 4)
+                with open(user_name + "_" + str(task_count) +  ".json", "w") as outfile:
+                    outfile.write(json_object + "\n")
             print("Invalid Input!!")
         # step += 1
 

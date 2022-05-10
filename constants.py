@@ -1,6 +1,12 @@
 ERROR_TAGS = ['ArtOrDet', 'Mec', 'Nn', 'Npos', 'Others', 'Pform', 'Pref', 'Prep', 'Rloc-', 'SVA', 'Sfrag', 'Smod', 
               'Srun', 'Ssub', 'Trans', 'Um', 'V0', 'Vform', 'Vm', 'Vt', 'WOadv', 'WOinc', 'Wci', 'Wform', 'Wtone']
 
+undo_penalty = 0.05
+error_hint_penalty = 0.1
+index_hint_penalty = 0.1
+all_hint_penalty = 0.2
+idk_penalty = 0.3
+
 # standard_string = "missing or incorrect"
 # FEEDBACK_TEMPLATE1 = {'ArtOrDet' : "Article",
 #                  'Mec' : "Punctuation / capitalization / spelling",
