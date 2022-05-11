@@ -93,7 +93,7 @@ class GEC_Env(Env):
             self.feedback = "Feedback: The sentence is grammatically correct! "
             self.next_gt_action_buff.append(None)
         else:
-            if min_edit < self.edit_dist:
+            if (self.annotator_buff[-1] == self.annotator and min_edit < self.edit_dist) or (self.annotator_buff[-1] != self.annotator and min_edit < total_ed):
                 self.feedback = "Feedback: Yes, we are getting closer to the correct sentence! "
             else:
                 self.feedback = "Feedback: You might want to recheck your last action! "
@@ -270,17 +270,28 @@ class GEC_Env(Env):
                     'kirti' : [209, 52, 35, 159, 745, 1029]}
         self.data_id = task_ind[user][count]
         # 604, 1262
-        # print("data id = ",self.data_id)
-        # print("reward = ", self.reward)
         self.sent = copy.deepcopy(self.dataset.datapoints[self.data_id][0].S)
         self.data_state = copy.deepcopy(self.dataset.datapoints[self.data_id])
-        # self.sent_mapping = [list(np.arange(0, len(self.sent.split())))]
-        self.annotator = 0
+
+        # choosing the annotator with the least edit distance needed as the default annotator
+        min_edit = len(self.sent.split())+1
+        for i in range(len(self.data_state)):
+            annot = self.data_state[i]
+            edit_dist = get_ed(self.sent.split(), annot.G.split())
+            if min_edit > edit_dist:
+                min_edit = edit_dist
+                self.annotator = i
+
         self.feedback = ""
         self.reward = 0
         self.max_reward = 1
         self.cumulative_reward = 0
         self.bucket_map = {}
+
+        print("data id = ",self.data_id)
+        print("your initial reward is = ", self.reward)
+        print("default annotator = ", self.annotator)
+
         for i in range(len(self.sent.split())):
             self.bucket_map[i] = 2*i + 1
 
@@ -291,7 +302,7 @@ class GEC_Env(Env):
         self.edit_dist_buff = [self.edit_dist]
         self.action_buff = []
         self.sent_buff = [self.sent]
-        self.annotator_buff = [0]
+        self.annotator_buff = [self.annotator]
         self.next_gt_action_buff = []
         pending_act, _ = get_errors(self.sent, self.data_state[self.annotator].G)
         if len(pending_act)>0:
