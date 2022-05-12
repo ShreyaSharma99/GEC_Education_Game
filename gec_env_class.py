@@ -267,7 +267,7 @@ class GEC_Env(Env):
         task_ind = {'mattia' : [3, 635, 35, 9, 12, 52],
                     'shehzaad' : [106, 159, 112, 209, 635, 3],
                     'mrinmaya' : [9, 112, 12, 106, 745, 1029],
-                    'kirti' : [209, 52, 35, 159, 745, 1029]}
+                    'keerthi' : [209, 52, 35, 159, 745, 1029]}
         self.data_id = task_ind[user][count]
         # 604, 1262
         self.sent = copy.deepcopy(self.dataset.datapoints[self.data_id][0].S)
